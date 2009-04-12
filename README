@@ -1,0 +1,61 @@
+This is a module and class factory for SoftLayer's customer portal API (http://sldn.softlayer.com/).  See the rdoc documentation and the sample directory for usage details.
+
+The factory creates classes as they are declared.  As a group:
+
+SLAPICLASSES = [ 'SoftLayer::Account' ]
+SLAPISERVICES = [ 'SoftLayer_Billing_Item', 'SoftLayer_Network_Storage' ]
+SoftLayer::declareClasses(:ruby => SLAPICLASSES, :soap => SLAPISERVICES)
+
+Or one at a time:
+
+SoftLayer::ClassFactory(:class => 'SoftLayer::Account')
+
+Objects are then created and used like normal Ruby objects:
+
+account = SoftLayer::Account.new(:user => AUTH_USER, :key => AUTH_KEY, :initParam => ACCT_ID)
+puts account.getBalance
+
+The object's associated Type is available like a hash:
+
+puts account['email']
+
+Object Masks:
+
+account.objectMask = { 'allBillingItems' => nil }
+pp account['allBillingItems]
+
+
+API user and key is cached after first use (but can be overridden on a per object basis):
+
+SLAPISERVICES = [ 'SoftLayer_Account', 'SoftLayer_Billing_Item', 'SoftLayer_Network_Storage' ]
+SoftLayer::declareClasses(:soap => SLAPISERVICES)
+
+account = SoftLayer::Account.new(:user => AUTH_USER, :key => AUTH_KEY, :initParam => ACCT_ID)
+account.objectMask={ 'allBillingItems' => nil, 'nasNetworkStorage' => nil }
+account['allBillingItems'].each do |bi|
+	billingItem = SoftLayer::Billing::Item.new(:initParam => bi['id'])
+	pp billingItem.getLocation['longName']
+end
+
+account['nasNetworkStorage'].each do |n|
+	nas = SoftLayer::Network::Storage(:user => OTHER_AUTH_USER, :key => OTHER_AUTH_KEY, :initParam => n['id'])
+	pp nas.capacityGb
+end
+
+ToDo:
+
+Result Limits.  Can be done now as a parameter to any method, but should be integrated such that this does the right thing:
+
+account.getAllBillingItems(:limit => [X,Y]) do |o,bia|
+	( blah )
+end
+
+Such that is +o+ is the offset and +bia+ is an array containing X or fewer elements (or a single element if :limit[0] == 1); 
+blah executes on each batch until it's done.  
+
+Without a block, should return the 5 elements offset from Y:
+
+bia = account.getAllBillingItems(:limit => [5,Y])
+bia.size <= 5
+
+
