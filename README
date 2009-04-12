@@ -22,7 +22,7 @@ puts account['email']
 Object Masks:
 
 account.objectMask = { 'allBillingItems' => nil }
-pp account['allBillingItems]
+pp account['allBillingItems']
 
 
 API user and key is cached after first use (but can be overridden on a per object basis):
