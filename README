@@ -1,4 +1,4 @@
-This is a module and class factory for SoftLayer's customer portal API (http://sldn.softlayer.com/).  See the rdoc documentation and the sample directory for usage details.
+This is a module and class factory for SoftLayer's customer portal API (http://sldn.softlayer.com ).  See the rdoc documentation and the sample directory for usage details.
 
 The factory creates classes as they are declared.  As a group:
 
