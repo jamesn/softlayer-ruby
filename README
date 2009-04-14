@@ -42,16 +42,13 @@ account['nasNetworkStorage'].each do |n|
 	pp nas.capacityGb
 end
 
-ToDo:
+Result Limits:
 
-Result Limits.  Can be done now as a parameter to any method, but should be integrated such that this does the right thing:
-
-account.getAllBillingItems(:limit => [X,Y]) do |o,bia|
+account.getAllBillingItems(:limit => [X,Y]) do |bia|
 	( blah )
 end
 
-Such that is +o+ is the offset and +bia+ is an array containing X or fewer elements (or a single element if :limit[0] == 1); 
-blah executes on each batch until it's done.  
+Such that +bia+ is an array containing X or fewer elements; blah executes on each batch until there's no more.  
 
 Without a block, should return the 5 elements offset from Y:
 

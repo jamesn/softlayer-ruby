@@ -1,0 +1,7 @@
+
+
+Changes since 0.5.0.
+
+Implemented resultLimit headers.  See readme and the rdoc for SoftLayer::ResultLimit.
+Renamed SoftLayer::ObjectMaskHeader to SoftLayer::ObjectMask and SoftLayer::ParamHeader to SoftLayer::Param
+

@@ -61,16 +61,6 @@ module SoftLayer
     end
   end
   
-  # Derive a Class from a SOAP::Mapping::Object
-  # +obj+:: The object to derive a class from.
-  # Returns a new object with +obj+ as the cached object. (obj['id'] == :initParam)
-  #
-  #  XXX:  We should use the SOAP mapping registry to avoid doing this, but what the hell.
-  #  Also, there's no guartinee there's a class here to be created, so the assumption is
-  #  that you know what you're doing when you use this (much like everything else).
-  def SoftLayer::deriveClass(args)
-  end
-
   # Create a Ruby class to match an SLAPI WSDL endpoint.
   # Args:
   # +class+:: The name of the class to create in Ruby format.
@@ -111,8 +101,8 @@ module SoftLayer
     return klass
   end
 
-# A class to old Paramaters.
-  class ParamHeader < SOAP::Header::SimpleHandler
+  # A class to old Paramaters.
+  class Param < SOAP::Header::SimpleHandler
     def initialize(tag, out)
       @out = out
       super(XSD::QName.new(nil, tag))
@@ -132,7 +122,8 @@ module SoftLayer
   end
 
   # A class to hold the object mask.
-  class ObjectMaskHeader < SOAP::Header::SimpleHandler
+  class ObjectMask < SOAP::Header::SimpleHandler
+    
     def initialize(tag, out)
       @out = out
       super(XSD::QName.new(nil, tag))
@@ -149,7 +140,21 @@ module SoftLayer
     def []=(k,v)
       @out[k]=v
     end
+  end
+  
+  class ResultLimit < SOAP::Header::SimpleHandler
+    attr_accessor :limit, :offset
     
+    # limit should be an array of two elements; limit and offset.
+    def initialize(tag, limit)
+      @limit = limit[0]
+      @offset = limit[1]
+      super(XSD::QName.new(nil, tag))
+    end
+
+    def on_simple_outbound
+      { 'limit' => @limit, 'offset' => @offset }
+    end
   end
 
   # The Base class for our generated class.
@@ -182,13 +187,14 @@ module SoftLayer
       @@apiKey = args[:key] unless (args[:key].nil? || !@@apiKey.nil?)
       @apiUser = @@apiUser unless (@@apiUser.nil? || !@apiUser.nil?)
       @apiKey = @@apiKey unless (@@apiKey.nil? || !@apiKey.nil?)
+      @authHeader = Param.new('authenticate', {'username' => @apiUser, 'apiKey' => @apiKey})
 
       self.class.cacheWSDL
       @slapi = @@wsdl[self.soapClass].create_rpc_driver
       self.debug=args[:debug] unless args[:debug].nil?
     end
 
-    # Return this's object's matching SLAPI SOAP Class.
+    # Return this object's matching SLAPI SOAP Class.
     def soapClass
       return self.class.to_s.gsub(/::/, '_')
     end
@@ -223,10 +229,10 @@ module SoftLayer
     #   userCount => nil }
     # Changing this resets the cached object used by #[]
     def objectMask=(mask)
-      if mask.class == ObjectMaskHeader
+      if mask.class == ObjectMask
         @objectMask = mask
       else
-        @objectMask = ObjectMaskHeader.new("#{self.soapClass}ObjectMask", mask)
+        @objectMask = ObjectMask.new("#{self.soapClass}ObjectMask", mask)
       end
       @slapiObject = nil
     end
@@ -234,33 +240,83 @@ module SoftLayer
     def objectMask
       return @objectMask
     end
+    
+    # Set an object wide result set (or clear it)
+    # arg can be one of three things:
+    # * nil clears the resultLimit
+    # * A Result Limit array of two elements range and offset.
+    # * An existing ResultLimit object
+    def resultLimit=(arg)
+      case arg.class
+      when NilClass
+        @resultLimit = nil
+      when Array
+        @resultLimit = ResultLimit.new('resultLimit',arg)
+      when ResultLimit
+        @resultLimit = arg
+      end
+    end
+    
+    def resultLimit
+      return @resultLimit
+    end
 
 
     # Make a direct api call.  Paramaters are a hash where the key is passed to ParamHeader as the tag, and the value
     # is passed as the tag content, unless it's a magic paramater.
     # Magic Paramaters:
-    # +initParam+:: Initialization paramater for this call (just the key).  Otherwise @initParam is used.
-    #
+    # +initParam+:: Initialization paramater for this call (just the key), therwise @initParam is used.
+    # +limit+:: A Result Limit array of two elements range and offset.  If @resultLimit is set it's used
+    # if +limit+ is not and if neither is set, no limit is applied.
+    # 
+    # If a block is provided, the limit's range (or fewer) elements will yield to the block until the dataset
+    # is exhausted.  If no limit is provided with the block a limit of [1,0] is assumed initially.
     # Aliased to #method_missing.
-    def slapiCall(method, args = { })
+    def slapiCall(method, args = { }, &block)
       initParam = args[:initParam] unless args[:initParam].nil?
       args.delete(:initParam) unless args[:initParam].nil?
+      initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
       initParam = @initParam if initParam.nil?
+      resultLimit = ResultLimit.new('resultLimit', args[:limit]) unless args[:limit].nil?
+      args.delete(:limit) unless args[:limit].nil?
+      resultLimit = @resultLimit if resultLimit.nil?
 
-      @slapi.headerhandler << ParamHeader.new('authenticate', {'username' => @apiUser, 'apiKey' => @apiKey})
+      @slapi.headerhandler << @authHeader unless @slapi.headerhandler.include?(@authHeader)
+      paramHeaders = []
       unless args.nil?
         args.each do |k,v|
-          @slapi.headerhandler << ParamHeader.new(k.to_s,v)
+          p = ParamHeader.new(k.to_s,v)
+          paramHeaders.push(p)
+          @slapi.headerhandler << p
         end
       end
-      @slapi.headerhandler << ParamHeader.new("#{self.soapClass}InitParameters", { 'id' => initParam})
+      @slapi.headerhandler << initParam unless @slapi.headerhandler.include?(@authHeader)
       @slapi.headerhandler << @objectMask unless @objectMask.nil?
-      return @slapi.call(method.to_s)
+      @slapi.headerhandler << resultLimit unless resultLimit.nil?
+      
+      if block_given?
+        go=true
+        resultLimit = ResultLimit.new('resultLimit', [1,0]) if resultLimit.nil? # this is broken.
+        @slapi.headerhandler << resultLimit unless @slapi.headerhandler.include?(resultLimit)
+        while(go) do
+          res = @slapi.call(method.to_s)
+          yield(res) unless (res.nil? || (res.respond_to?(:empty) && res.empty?))
+          go = false if res.nil?
+          go = false if (res.respond_to?(:size) && (res.size < resultLimit.limit))
+          resultLimit.offset=resultLimit.offset + resultLimit.limit
+        end
+        headerClean(resultLimit,paramHeaders)
+        return true
+      else
+        res = @slapi.call(method.to_s)
+        headerClean(resultLimit,paramHeaders)
+        return res
+      end
     end
 
     # Alias the above call method to #method_missing.
     alias_method  :method_missing, :slapiCall
-
+    
     # Enable (or disable) debug. (paramater is the IO handler to write to)
     def debug=(dev)
       @slapi.wiredump_dev=(dev)
@@ -292,6 +348,15 @@ module SoftLayer
     # Returns this Class's SOAP Class.
     def self.soapClass
       self.name.to_s.gsub(/::/, '_')
+    end
+    
+    private
+    
+    # Clean the headers out of the driver.
+    def headerClean(rl,ha)
+      @slapi.headerhandler.delete(rl)
+      ha.each { |h| @slapi.headerhandler.delete(h) }
+      
     end
 
   end
