@@ -1,4 +1,8 @@
 
+Changes since 0.6.0.
+
+Implement SoftLayer::Base#call to make dynamic method calls possible.
+Fix a reference to a renamed class (ParamHeader -> Param)
 
 Changes since 0.5.0.
 

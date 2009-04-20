@@ -260,7 +260,7 @@ module SoftLayer
     def resultLimit
       return @resultLimit
     end
-
+    
 
     # Make a direct api call.  Paramaters are a hash where the key is passed to ParamHeader as the tag, and the value
     # is passed as the tag content, unless it's a magic paramater.
@@ -273,6 +273,7 @@ module SoftLayer
     # is exhausted.  If no limit is provided with the block a limit of [1,0] is assumed initially.
     # Aliased to #method_missing.
     def slapiCall(method, args = { }, &block)
+      
       initParam = args[:initParam] unless args[:initParam].nil?
       args.delete(:initParam) unless args[:initParam].nil?
       initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
@@ -285,7 +286,7 @@ module SoftLayer
       paramHeaders = []
       unless args.nil?
         args.each do |k,v|
-          p = ParamHeader.new(k.to_s,v)
+          p = Param.new(k.to_s,v)
           paramHeaders.push(p)
           @slapi.headerhandler << p
         end
@@ -316,6 +317,10 @@ module SoftLayer
 
     # Alias the above call method to #method_missing.
     alias_method  :method_missing, :slapiCall
+    
+    def call(method, args = { }, &block)
+      return slapiCall(method, args, &block)
+    end
     
     # Enable (or disable) debug. (paramater is the IO handler to write to)
     def debug=(dev)
