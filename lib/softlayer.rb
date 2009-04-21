@@ -47,7 +47,7 @@ module SoftLayer
   def SoftLayer::declareClasses(args)
     classes = args[:ruby]
     services = args[:soap]
-    
+
     unless (services.nil? || services.empty?)
       services.each do |s|
         c = s.gsub(/_/,'::')
@@ -60,7 +60,7 @@ module SoftLayer
       k.cacheWSDL
     end
   end
-  
+
   # Create a Ruby class to match an SLAPI WSDL endpoint.
   # Args:
   # +class+:: The name of the class to create in Ruby format.
@@ -111,11 +111,11 @@ module SoftLayer
     def on_simple_outbound
       @out
     end
-        
+
     def [](k)
       return @out[k]
     end
-    
+
     def []=(k,v)
       @out[k]=v
     end
@@ -123,7 +123,7 @@ module SoftLayer
 
   # A class to hold the object mask.
   class ObjectMask < SOAP::Header::SimpleHandler
-    
+
     def initialize(tag, out)
       @out = out
       super(XSD::QName.new(nil, tag))
@@ -132,19 +132,19 @@ module SoftLayer
     def on_simple_outbound
       { 'mask' => @out }
     end
-    
+
     def [](k)
       @out[k]
     end
-    
+
     def []=(k,v)
       @out[k]=v
     end
   end
-  
+
   class ResultLimit < SOAP::Header::SimpleHandler
     attr_accessor :limit, :offset
-    
+
     # limit should be an array of two elements; limit and offset.
     def initialize(tag, limit)
       @limit = limit[0]
@@ -204,7 +204,7 @@ module SoftLayer
       @slapiObject = self.getObject if @slapiobject.nil?
       return @slapiObject[key.to_s]
     end
-    
+
     def setObject(obj)
       @slapiObject = obj
     end
@@ -236,11 +236,11 @@ module SoftLayer
       end
       @slapiObject = nil
     end
-    
+
     def objectMask
       return @objectMask
     end
-    
+
     # Set an object wide result set (or clear it)
     # arg can be one of three things:
     # * nil clears the resultLimit
@@ -256,11 +256,11 @@ module SoftLayer
         @resultLimit = arg
       end
     end
-    
+
     def resultLimit
       return @resultLimit
     end
-    
+
 
     # Make a direct api call.  Paramaters are a hash where the key is passed to ParamHeader as the tag, and the value
     # is passed as the tag content, unless it's a magic paramater.
@@ -273,7 +273,7 @@ module SoftLayer
     # is exhausted.  If no limit is provided with the block a limit of [1,0] is assumed initially.
     # Aliased to #method_missing.
     def slapiCall(method, args = { }, &block)
-      
+
       initParam = args[:initParam] unless args[:initParam].nil?
       args.delete(:initParam) unless args[:initParam].nil?
       initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
@@ -294,7 +294,7 @@ module SoftLayer
       @slapi.headerhandler << initParam unless @slapi.headerhandler.include?(@authHeader)
       @slapi.headerhandler << @objectMask unless @objectMask.nil?
       @slapi.headerhandler << resultLimit unless resultLimit.nil?
-      
+
       if block_given?
         go=true
         resultLimit = ResultLimit.new('resultLimit', [1,0]) if resultLimit.nil? # this is broken.
@@ -317,11 +317,11 @@ module SoftLayer
 
     # Alias the above call method to #method_missing.
     alias_method  :method_missing, :slapiCall
-    
+
     def call(method, args = { }, &block)
       return slapiCall(method, args, &block)
     end
-    
+
     # Enable (or disable) debug. (paramater is the IO handler to write to)
     def debug=(dev)
       @slapi.wiredump_dev=(dev)
@@ -331,9 +331,13 @@ module SoftLayer
     # Returns false of we couldn't parse the WSDL.
     def self.cacheWSDL
       return unless @@wsdl[self.soapClass].nil?
-      
+
       begin
+        # XXX: Silence a warning
+        v = $VERBOSE
+        $VERBOSE=nil
         @@wsdl[self.soapClass] = SOAP::WSDLDriverFactory.new(self.wsdlUrl)
+        $VERBOSE = v
         return true
       rescue => e
         return false
@@ -354,14 +358,14 @@ module SoftLayer
     def self.soapClass
       self.name.to_s.gsub(/::/, '_')
     end
-    
+
     private
-    
+
     # Clean the headers out of the driver.
     def headerClean(rl,ha)
       @slapi.headerhandler.delete(rl)
       ha.each { |h| @slapi.headerhandler.delete(h) }
-      
+
     end
 
   end

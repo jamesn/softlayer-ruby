@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: softlayer-ruby
 version: !ruby/object:Gem::Version 
-  version: 0.6.1.0
+  version: 0.6.2.0
 platform: ruby
 authors: 
 - James Nuckolls
@@ -9,7 +9,7 @@ autorequire: softlayer
 bindir: bin
 cert_chain: []
 
-date: 2009-04-19 15:00:00 -05:00
+date: 2009-04-19 23:00:00 -05:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 

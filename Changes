@@ -1,4 +1,8 @@
 
+Change since 0.6.1
+
+Silenced the name space warning (I think this is a bug in soap4r)
+
 Changes since 0.6.0.
 
 Implement SoftLayer::Base#call to make dynamic method calls possible.
