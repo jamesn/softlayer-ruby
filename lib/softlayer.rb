@@ -157,6 +157,23 @@ module SoftLayer
     end
   end
 
+
+  # An Exception proxy class
+  # This doesn't do anything yet, but it probably
+  # will at some point.
+  class Exception < RuntimeError
+
+    def initialize(args)
+      e = args[:exception]
+      message = args[:message] unless args[:message].nil?
+      message = e.message unless e.nil?
+      super(message)
+      
+      @realException = e unless e.nil?
+      @realException = self if @realException.nil?
+    end
+  end
+
   # The Base class for our generated class.
   class BaseClass
 
@@ -190,7 +207,9 @@ module SoftLayer
       @authHeader = Param.new('authenticate', {'username' => @apiUser, 'apiKey' => @apiKey})
 
       self.class.cacheWSDL
-      @slapi = @@wsdl[self.soapClass].create_rpc_driver
+      @slapi = @@wsdl[self.soapClass].create_rpc_driver unless @@wsdl[self.soapClass].nil?
+      raise SoftLayer::Exception.new(:message => 'WSDL endpoint not available.') if @slapi.nil?
+      
       self.debug=args[:debug] unless args[:debug].nil?
     end
 
@@ -300,7 +319,7 @@ module SoftLayer
         resultLimit = ResultLimit.new('resultLimit', [1,0]) if resultLimit.nil? # this is broken.
         @slapi.headerhandler << resultLimit unless @slapi.headerhandler.include?(resultLimit)
         while(go) do
-          res = @slapi.call(method.to_s)
+          res = realCall(method.to_s)
           yield(res) unless (res.nil? || (res.respond_to?(:empty) && res.empty?))
           go = false if res.nil?
           go = false if (res.respond_to?(:size) && (res.size < resultLimit.limit))
@@ -309,18 +328,16 @@ module SoftLayer
         headerClean(resultLimit,paramHeaders)
         return true
       else
-        res = @slapi.call(method.to_s)
+        res = realCall(method.to_s)
         headerClean(resultLimit,paramHeaders)
         return res
       end
     end
 
-    # Alias the above call method to #method_missing.
+    # Alias the above slapiCall to #method_missing.
     alias_method  :method_missing, :slapiCall
-
-    def call(method, args = { }, &block)
-      return slapiCall(method, args, &block)
-    end
+    # Alias slapiCall to #call specifically because of it's special paramter list.
+    alias_method :call, :slapiCall
 
     # Enable (or disable) debug. (paramater is the IO handler to write to)
     def debug=(dev)
@@ -333,14 +350,14 @@ module SoftLayer
       return unless @@wsdl[self.soapClass].nil?
 
       begin
-        # XXX: Silence a warning
+        # XXX: Silence soap4r's bogus use of Kernel#warn
         v = $VERBOSE
         $VERBOSE=nil
         @@wsdl[self.soapClass] = SOAP::WSDLDriverFactory.new(self.wsdlUrl)
         $VERBOSE = v
         return true
       rescue => e
-        return false
+        return SoftLayer::Exception.new(:exception => e)
       end 
     end
 
@@ -365,7 +382,20 @@ module SoftLayer
     def headerClean(rl,ha)
       @slapi.headerhandler.delete(rl)
       ha.each { |h| @slapi.headerhandler.delete(h) }
+    end
 
+    # This really calls the soap method.
+    # This catches all exceptions, creates a copy of our exception proxy class
+    # and copies the message.  This insures exceptions make it up to user code
+    # as opposed to soap4r's tendancy to just exit when there's a soap exception.
+    #  todo:  Add header processing/clean up.
+    def realCall(m)
+      begin
+        return @slapi.call(m)
+      rescue => e
+        re = SoftLayer::Exception.new(:exception => e)
+        raise re
+      end
     end
 
   end
