@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: softlayer-ruby
 version: !ruby/object:Gem::Version 
-  version: 0.6.2.0
+  version: 0.6.3.0
 platform: ruby
 authors: 
 - James Nuckolls
