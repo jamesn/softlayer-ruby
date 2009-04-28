@@ -1,6 +1,10 @@
 
-Changes since 0.6.3
+Changes since 0.7.0
 
+account for the off chance we are calling a method and @authHeader is nil in slapiCall
+fix a bug that would cause classes to be nil in declareClasses if we only passed soap service names (not method names as the commit says)
+
+Changes since 0.6.3
 
 Added a CDNLayer sample
 Refactor slapiCall and realCall to clean up a bit of a mess, fix method parameter handling, and cleans up header handling. There's a bit of an api change here.
