@@ -20,6 +20,7 @@ require 'softlayer/util'
 module SoftLayer
   # The Base class for our generated class.
   class BaseClass
+    attr_reader :slapi, :initParam
 
     WSDLBASE='http://api.service.softlayer.com/soap/v3'
     WSDLPARAM='?wsdl'
@@ -43,6 +44,7 @@ module SoftLayer
       @apiUser = args[:user] unless args[:user].nil?
       @apiKey = args[:key] unless args[:key].nil?
       @initParam = args[:initParam]
+      @initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => args[:initParam] }) unless args[:initParam].nil?
 
       @@apiUser = args[:user] unless (args[:user].nil? || !@@apiUser.nil?)
       @@apiKey = args[:key] unless (args[:key].nil? || !@@apiKey.nil?)
@@ -125,18 +127,18 @@ module SoftLayer
     end
 
 
-    # Make a direct api call.  Paramaters are a hash where the key is passed to ParamHeader as the tag, and the value
-    # is passed as the tag content, unless it's a magic paramater.
+    # Make a direct api call.  The values of the paramaters are passed to the method 
+    # (the keys generally are not), unless it's a magic paramater.
     # Magic Paramaters:
     # +initParam+:: Initialization paramater for this call (just the key), therwise @initParam is used.
-    # +limit+:: A Result Limit array of two elements range and offset.  If @resultLimit is set it's used
+    # +limit+:: A Result Limit array of two elements range and offset.  If @resultLimit is set it's used \
     # if +limit+ is not and if neither is set, no limit is applied.
+    # +header+:: Extra headers to pass to the method in an array.
     # 
     # If a block is provided, the limit's range (or fewer) elements will yield to the block until the dataset
-    # is exhausted.  If no limit is provided with the block a limit of [1,0] is assumed initially.
+    # is exhausted.  If no limit is provided with the block a limit of [1,0] is assumed initially (sorta).
     # Aliased to #method_missing.
-    def slapiCall(method, args = { }, &block)
-
+    def slapiCall(method, args = {}, &block)      
       initParam = args[:initParam] unless args[:initParam].nil?
       args.delete(:initParam) unless args[:initParam].nil?
       initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
@@ -144,38 +146,29 @@ module SoftLayer
       resultLimit = ResultLimit.new('resultLimit', args[:limit]) unless args[:limit].nil?
       args.delete(:limit) unless args[:limit].nil?
       resultLimit = @resultLimit if resultLimit.nil?
+      unroll = true if resultLimit.nil? && block_given?
+      resultLimit = ResultLimit.new('resultLimit', [5,0]) if resultLimit.nil? && block_given?
+      headers = args[:header]
+      args.delete(:header) unless args[:header].nil?
 
-      @slapi.headerhandler << @authHeader unless @slapi.headerhandler.include?(@authHeader)
-      paramHeaders = []
-      unless args.nil?
-        args.each do |k,v|
-          p = Param.new(k.to_s,v)
-          paramHeaders.push(p)
-          @slapi.headerhandler << p
-        end
-      end
-      @slapi.headerhandler << initParam unless @slapi.headerhandler.include?(@authHeader)
-      @slapi.headerhandler << @objectMask unless @objectMask.nil?
-      @slapi.headerhandler << resultLimit unless resultLimit.nil?
-
-      if block_given?
-        go=true
-        resultLimit = ResultLimit.new('resultLimit', [1,0]) if resultLimit.nil? # this is broken.
-        @slapi.headerhandler << resultLimit unless @slapi.headerhandler.include?(resultLimit)
-        while(go) do
-          res = realCall(method.to_s)
-          yield(res) unless (res.nil? || (res.respond_to?(:empty) && res.empty?))
-          go = false if res.nil?
-          go = false if (res.respond_to?(:size) && (res.size < resultLimit.limit))
+      headers = [] if headers.nil?
+      headers << initParam unless @slapi.headerhandler.include?(initParam)
+      headers << @objectMask unless @objectMask.nil?
+      headers << resultLimit unless resultLimit.nil?
+      argshash = { :method => method, :headers => headers, :args => args }
+      argshash[:yield] = true if block_given?
+      catch :done do
+        while true do
+          res = realCall(argshash)
+          return res unless block_given?
+          return res if res.nil?
+          res.each { |e|  yield(e) } if unroll && res.respond_to?(:each)
+          yield(res) unless unroll || (res.respond_to?(:empty) && res.empty?)
+          throw :done if (res.respond_to?(:size) && (res.size < resultLimit.limit))
           resultLimit.offset=resultLimit.offset + resultLimit.limit
         end
-        headerClean(resultLimit,paramHeaders)
-        return true
-      else
-        res = realCall(method.to_s)
-        headerClean(resultLimit,paramHeaders)
-        return res
       end
+      headerClean(headers) if argshash[:yield]
     end
 
     # Alias the above slapiCall to #method_missing.
@@ -223,8 +216,7 @@ module SoftLayer
     private
 
     # Clean the headers out of the driver.
-    def headerClean(rl,ha)
-      @slapi.headerhandler.delete(rl)
+    def headerClean(ha)
       ha.each { |h| @slapi.headerhandler.delete(h) }
     end
 
@@ -233,12 +225,22 @@ module SoftLayer
     # and copies the message.  This insures exceptions make it up to user code
     # as opposed to soap4r's tendancy to just exit when there's a soap exception.
     #  todo:  Add header processing/clean up.
-    def realCall(m)
+    def realCall(args)
+      m = args[:method]
+      h = args[:headers]
+      a = args[:args]
+      y = args[:yield]
+      @slapi.headerhandler << @authHeader unless @slapi.headerhandler.include?(@authHeader)
+      h.each {|e| @slapi.headerhandler << e }
+      args = []
+      a.each { |k,v| args.push(v) }
       begin
-        return @slapi.call(m)
+        return @slapi.call(m.to_s, *args)
       rescue => e
         re = SoftLayer::Exception.new(:exception => e)
         raise re
+      ensure
+        headerClean(h) unless y
       end
     end
   end
