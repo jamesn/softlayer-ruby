@@ -46,6 +46,7 @@ SoftLayer::declareClasses(:ruby => SLAPICLASSES)
 range = 5
 offset = 0
 account = SoftLayer::Account.new(:user => AUTH_USER, :key => AUTH_KEY, :initParam => ACCT_ID)
+
 # account.debug=STDOUT
 bia = account.getAllBillingItems(:limit => [range,offset])
 pp bia
@@ -61,11 +62,13 @@ account.getAllBillingItems(:limit => [range,offset]) do |bi|
   offset = range + offset
 end
 
-range = 5
+range = 1
 offset = 0
-# account.debug=STDOUT
-account.getInvoices(:limit => [range,offset]) do |bi|
+account.getInvoices do |bi|
   pp bi
   puts "================== #{offset}"
   offset = offset + range
 end
+
+exit 0
+
