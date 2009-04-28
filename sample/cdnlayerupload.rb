@@ -48,15 +48,13 @@ SLAPICLASSES = [ 'SoftLayer::Account', 'SoftLayer::Network::ContentDelivery::Acc
 SoftLayer::declareClasses(:ruby => SLAPICLASSES)
 account = SoftLayer::Account.new(:user => AUTH_USER, :key => AUTH_KEY, :initParam => ACCT_ID)
 account.objectMask={'cdnAccountName' => nil}
-cdnacct = nil
 
 # Get the accout number by matching the name that was in ARGV[2]
+cdnacct = nil
 account.getCdnAccounts.each do |c|
   # pp c
   cdnacct = SoftLayer::Network::ContentDelivery::Account.new(:initParam => c['id']) if c['cdnAccountName'] == CDN_ACCT
 end
-
-cdnacct.getPopNames
 
 fname = File.basename(INFILE)
 # base64 encode the file
