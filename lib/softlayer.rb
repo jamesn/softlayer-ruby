@@ -55,6 +55,7 @@ module SoftLayer
     services = args[:soap]
     base = args[:base]
 
+    classes = [] if classes.nil?
     unless (services.nil? || services.empty?)
       services.each do |s|
         c = s.gsub(/_/,'::')
