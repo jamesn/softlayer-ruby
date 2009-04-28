@@ -73,8 +73,7 @@ module SoftLayer
 
 
   # An Exception proxy class
-  # This doesn't do anything yet, but it probably
-  # will at some point.
+  # Not every exception soap4r returns decends from RuntimeError.
   class Exception < RuntimeError
 
     def initialize(args)
