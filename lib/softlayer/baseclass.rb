@@ -230,7 +230,7 @@ module SoftLayer
       h = args[:headers]
       a = args[:args]
       y = args[:yield]
-      @slapi.headerhandler << @authHeader unless @slapi.headerhandler.include?(@authHeader)
+      @slapi.headerhandler << @authHeader unless (@slapi.headerhandler.include?(@authHeader) || @authHeader.nil?)
       h.each {|e| @slapi.headerhandler << e }
       args = []
       a.each { |k,v| args.push(v) }
