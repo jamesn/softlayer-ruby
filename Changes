@@ -1,4 +1,14 @@
 
+Changes since 0.6.3
+
+
+Added a CDNLayer sample
+Refactor slapiCall and realCall to clean up a bit of a mess, fix method parameter handling, and cleans up header handling. There's a bit of an api change here.
+Clean up initParamater handling (so that it actually works again)
+Allow the base class to be replaced with another.
+Split softlayer.rb into three files, one containing just the base class, another containing 
+the header and exception classes.
+
 Change since 0.6.1
 
 Silenced the name space warning (I think this is a bug in soap4r)

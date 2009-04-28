@@ -6,7 +6,7 @@ require 'rake/gempackagetask'
 spec = Gem::Specification.new do |s|
     s.platform  =   Gem::Platform::RUBY
     s.name      =   "softlayer-ruby"
-    s.version   =   "0.6.3.0"
+    s.version   =   "0.7.0.0"
     s.authors    =   [ "James Nuckolls" ]
     s.email     =   "jamesn@what.net"
     s.homepage   =   "http://github.com/jamesn/softlayer-ruby"

@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: softlayer-ruby
 version: !ruby/object:Gem::Version 
-  version: 0.6.3.0
+  version: 0.7.0.0
 platform: ruby
 authors: 
 - James Nuckolls
@@ -9,7 +9,7 @@ autorequire: softlayer
 bindir: bin
 cert_chain: []
 
-date: 2009-04-19 23:00:00 -05:00
+date: 2009-04-28 00:00:00 -05:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -34,10 +34,13 @@ extra_rdoc_files:
 - Changes
 files: 
 - lib/softlayer.rb
+- lib/softlayer/baseclass.rb
+- lib/softlayer/util.rb
 - sample/nascapacity.rb
 - sample/billingreport.rb
 - sample/objectmask.rb
 - sample/resultlimit.rb
+- sample/cdnlayerupload.rb
 - README
 - LICENSE
 - Changes
