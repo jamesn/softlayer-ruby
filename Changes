@@ -1,4 +1,9 @@
 
+Changes since 0.7.1
+
+fix a syntax error in README
+fix a bug that cause getObject to get executed every time BaseClass#[] was called instead of this result being cached.
+
 Changes since 0.7.0
 
 account for the off chance we are calling a method and @authHeader is nil in slapiCall
@@ -28,4 +33,3 @@ Changes since 0.5.0.
 
 Implemented resultLimit headers.  See readme and the rdoc for SoftLayer::ResultLimit.
 Renamed SoftLayer::ObjectMaskHeader to SoftLayer::ObjectMask and SoftLayer::ParamHeader to SoftLayer::Param
-
