@@ -15,7 +15,7 @@ Objects are then created and used like normal Ruby objects:
 account = SoftLayer::Account.new(:user => AUTH_USER, :key => AUTH_KEY, :initParam => ACCT_ID)
 puts account.getBalance
 
-The object's associated Type is available like a hash:
+The object's associated Type is available like a Hash:
 
 puts account['email']
 
@@ -38,7 +38,7 @@ account['allBillingItems'].each do |bi|
 end
 
 account['nasNetworkStorage'].each do |n|
-	nas = SoftLayer::Network::Storage(:user => OTHER_AUTH_USER, :key => OTHER_AUTH_KEY, :initParam => n['id'])
+	nas = SoftLayer::Network::Storage.new(:user => OTHER_AUTH_USER, :key => OTHER_AUTH_KEY, :initParam => n['id'])
 	pp nas.capacityGb
 end
 
@@ -48,7 +48,7 @@ account.getAllBillingItems(:limit => [X,Y]) do |bia|
 	( blah )
 end
 
-Such that +bia+ is an array containing X or fewer elements; blah executes on each batch until there's no more.  
+Such that bia is an array containing X or fewer elements; blah executes on each batch until there's no more.  
 
 Without a block, should return the 5 elements offset from Y:
 
