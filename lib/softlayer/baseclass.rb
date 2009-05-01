@@ -66,7 +66,7 @@ module SoftLayer
 
     # This returns key values from this Service's associated Type (retrieved using #getObject).
     def [](key)
-      @slapiObject = self.getObject if @slapiobject.nil?
+      @slapiObject = self.getObject if @slapiObject.nil?
       return @slapiObject[key.to_s]
     end
 
