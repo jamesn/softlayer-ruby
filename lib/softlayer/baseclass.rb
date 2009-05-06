@@ -237,7 +237,7 @@ module SoftLayer
       begin
         return @slapi.call(m.to_s, *args)
       rescue => e
-        re = SoftLayer::Exception.new(:exception => e)
+        re = SoftLayer::Exception.factory(e)
         raise re
       ensure
         headerClean(h) unless y

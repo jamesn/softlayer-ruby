@@ -75,6 +75,7 @@ module SoftLayer
   # An Exception proxy class
   # Not every exception soap4r returns decends from RuntimeError.
   class Exception < RuntimeError
+    attr_reader :name
 
     def initialize(args)
       e = args[:exception]
@@ -82,8 +83,16 @@ module SoftLayer
       message = e.message unless e.nil?
       super(message)
 
+      @name = e.faultcode.to_s unless e.nil?
+      @name = self.name.to_s unless @name.nil?
       @realException = e unless e.nil?
       @realException = self if @realException.nil?
+    end
+    
+    # Take a soap exception and generate a new Exception class.
+    def Exception.factory(s)
+      ek = SoftLayer::ClassFactory(:class => s.faultcode.to_s.gsub(/_/,'::'), :base => self)
+      return ek.new(:exception => s)
     end
   end
 end
