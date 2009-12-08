@@ -10,7 +10,6 @@
 #
 
 require 'rubygems' rescue LoadError
-gem 'soap4r'
 require 'soap/header/simplehandler'
 
 
