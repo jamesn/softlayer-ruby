@@ -199,12 +199,12 @@ module SoftLayer
         return SoftLayer::Exception.new(:exception => e)
       end 
     end
-    
+
     def self.endPoint
       @@endPoint = WSDLBASE if @@endPoint.nil?
       @@endPoint
     end
-    
+
     def self.endPoint=(url)
       @@endPoint = url
     end
