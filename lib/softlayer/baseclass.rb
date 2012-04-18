@@ -21,12 +21,14 @@ module SoftLayer
   class BaseClass
     attr_reader :slapi, :initParam
 
-    WSDLBASE='http://api.service.softlayer.com/soap/v3'
+    WSDLBASE='https://api.service.softlayer.com/soap/v3'
     WSDLPARAM='?wsdl'
 
     @@wsdl = { }
     @@apiUser = nil
     @@apiKey = nil
+    @@endPoint = nil
+    @endPoint = nil
 
     # The initializer.
     # Arguments:
@@ -42,14 +44,15 @@ module SoftLayer
     def initialize(args)
       @apiUser = args[:user] unless args[:user].nil?
       @apiKey = args[:key] unless args[:key].nil?
+      @endPoint = self.class.endPoint
       @initParam = args[:initParam]
-      @initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => args[:initParam] }) unless args[:initParam].nil?
+      @initParam = Param.new(@endPoint, "#{self.soapClass}InitParameters", { 'id' => args[:initParam] }) unless args[:initParam].nil?
 
       @@apiUser = args[:user] unless (args[:user].nil? || !@@apiUser.nil?)
       @@apiKey = args[:key] unless (args[:key].nil? || !@@apiKey.nil?)
       @apiUser = @@apiUser unless (@@apiUser.nil? || !@apiUser.nil?)
       @apiKey = @@apiKey unless (@@apiKey.nil? || !@apiKey.nil?)
-      @authHeader = Param.new('authenticate', {'username' => @apiUser, 'apiKey' => @apiKey})
+      @authHeader = Param.new(@endPoint, 'authenticate', {'username' => @apiUser, 'apiKey' => @apiKey})
 
       self.class.cacheWSDL
       @slapi = @@wsdl[self.soapClass].create_rpc_driver unless @@wsdl[self.soapClass].nil?
@@ -96,7 +99,7 @@ module SoftLayer
       if mask.class == ObjectMask
         @objectMask = mask
       else
-        @objectMask = ObjectMask.new("#{self.soapClass}ObjectMask", mask)
+        @objectMask = ObjectMask.new(@endPoint, "#{self.soapClass}ObjectMask", mask)
       end
       @slapiObject = nil
     end
@@ -115,7 +118,7 @@ module SoftLayer
       when NilClass
         @resultLimit = nil
       when Array
-        @resultLimit = ResultLimit.new('resultLimit',arg)
+        @resultLimit = ResultLimit.new(@endPoint, 'resultLimit',arg)
       when ResultLimit
         @resultLimit = arg
       end
@@ -140,13 +143,13 @@ module SoftLayer
     def slapiCall(method, args = {}, &block)      
       initParam = args[:initParam] unless args[:initParam].nil?
       args.delete(:initParam) unless args[:initParam].nil?
-      initParam = Param.new("#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
+      initParam = Param.new(@endPoint, "#{self.soapClass}InitParameters", { 'id' => initParam }) unless initParam.nil?
       initParam = @initParam if initParam.nil?
-      resultLimit = ResultLimit.new('resultLimit', args[:limit]) unless args[:limit].nil?
+      resultLimit = ResultLimit.new(@endPoint, 'resultLimit', args[:limit]) unless args[:limit].nil?
       args.delete(:limit) unless args[:limit].nil?
       resultLimit = @resultLimit if resultLimit.nil?
       unroll = true if resultLimit.nil? && block_given?
-      resultLimit = ResultLimit.new('resultLimit', [5,0]) if resultLimit.nil? && block_given?
+      resultLimit = ResultLimit.new(@endPoint, 'resultLimit', [5,0]) if resultLimit.nil? && block_given?
       headers = args[:header]
       args.delete(:header) unless args[:header].nil?
 
@@ -196,6 +199,15 @@ module SoftLayer
         return SoftLayer::Exception.new(:exception => e)
       end 
     end
+    
+    def self.endPoint
+      @@endPoint = WSDLBASE if @@endPoint.nil?
+      @@endPoint
+    end
+    
+    def self.endPoint=(url)
+      @@endPoint = url
+    end
 
     # Return this Class's WSDL.
     def self.wsdl
@@ -204,7 +216,7 @@ module SoftLayer
 
     # Return this Class's WSDL URL.
     def self.wsdlUrl
-      return URI.parse("#{WSDLBASE}/#{self.soapClass}#{WSDLPARAM}")
+      return URI.parse("#{self.endPoint}/#{self.soapClass}#{WSDLPARAM}")
     end
 
     # Returns this Class's SOAP Class.

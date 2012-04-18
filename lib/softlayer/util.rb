@@ -16,9 +16,9 @@ require 'soap/header/simplehandler'
 module SoftLayer
   # A class to old Paramaters.
   class Param < SOAP::Header::SimpleHandler
-    def initialize(tag, out)
+    def initialize(nemespace, tag, out)
       @out = out
-      super(XSD::QName.new(nil, tag))
+      super(XSD::QName.new(nemespace, tag))
     end
 
     def on_simple_outbound
@@ -37,9 +37,9 @@ module SoftLayer
   # A class to hold the object mask.
   class ObjectMask < SOAP::Header::SimpleHandler
 
-    def initialize(tag, out)
+    def initialize(namespace, tag, out)
       @out = out
-      super(XSD::QName.new(nil, tag))
+      super(XSD::QName.new(namespace, tag))
     end
 
     def on_simple_outbound
@@ -59,10 +59,10 @@ module SoftLayer
     attr_accessor :limit, :offset
 
     # limit should be an array of two elements; limit and offset.
-    def initialize(tag, limit)
+    def initialize(namespace, tag, limit)
       @limit = limit[0]
       @offset = limit[1]
-      super(XSD::QName.new(nil, tag))
+      super(XSD::QName.new(namespace, tag))
     end
 
     def on_simple_outbound
