@@ -36,6 +36,7 @@ files:
 - lib/softlayer.rb
 - lib/softlayer/baseclass.rb
 - lib/softlayer/util.rb
+- lib/soap/property
 - sample/nascapacity.rb
 - sample/billingreport.rb
 - sample/objectmask.rb
