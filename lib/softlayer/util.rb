@@ -16,9 +16,9 @@ require 'soap/header/simplehandler'
 module SoftLayer
   # A class to old Paramaters.
   class Param < SOAP::Header::SimpleHandler
-    def initialize(nemespace, tag, out)
+    def initialize(namespace, tag, out)
       @out = out
-      super(XSD::QName.new(nemespace, tag))
+      super(XSD::QName.new(namespace, tag))
     end
 
     def on_simple_outbound
